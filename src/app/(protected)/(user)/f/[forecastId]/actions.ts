@@ -13,6 +13,8 @@ import {
 import {
   createPredictionSchema,
   updatePredictionSchema,
+  type CreatePredictionInput,
+  type UpdatePredictionInput,
 } from "@/schemas/predictions";
 import {
   createPrediction,
@@ -92,27 +94,30 @@ export async function createPredictionAction(
     });
   }
 
+  // ✅ Tell TS what this is
+  const parsed = validation.data as CreatePredictionInput;
+
   // 4. Validate business rules
   const businessValidation = await validatePredictionCreation({
-    ...validation.data,
+    ...parsed,
     userId: session.user.id,
   });
 
   if (!businessValidation.valid) {
     return createErrorState(businessValidation.errors, {
-      value: validation.data.value,
-      confidence: validation.data.confidence?.toString() || "",
-      reasoning: validation.data.reasoning || null,
-      method: validation.data.method || null,
-      estimatedTime: validation.data.estimatedTime?.toString() || "",
-      equityInvestment: validation.data.equityInvestment?.toString() || "",
-      debtFinancing: validation.data.debtFinancing?.toString() || "",
+      value: parsed.value,
+      confidence: parsed.confidence?.toString() || "",
+      reasoning: parsed.reasoning || null,
+      method: parsed.method || null,
+      estimatedTime: parsed.estimatedTime?.toString() || "",
+      equityInvestment: parsed.equityInvestment?.toString() || "",
+      debtFinancing: parsed.debtFinancing?.toString() || "",
     });
   }
 
   // 5. Create prediction
   await createPrediction({
-    ...validation.data,
+    ...parsed,
     userId: session.user.id,
   });
 
@@ -183,23 +188,26 @@ export async function updatePredictionAction(
     });
   }
 
+  // ✅ Tell TS what this is
+  const parsed = validation.data as UpdatePredictionInput;
+
   // 4. Validate business rules
-  const businessValidation = await validatePredictionUpdate(validation.data);
+  const businessValidation = await validatePredictionUpdate(parsed);
 
   if (!businessValidation.valid) {
     return createErrorState(businessValidation.errors, {
-      value: validation.data.value,
-      confidence: validation.data.confidence?.toString() || "",
-      reasoning: validation.data.reasoning || null,
-      method: validation.data.method || null,
-      estimatedTime: validation.data.estimatedTime?.toString() || "",
-      equityInvestment: validation.data.equityInvestment?.toString() || "",
-      debtFinancing: validation.data.debtFinancing?.toString() || "",
+      value: parsed.value,
+      confidence: parsed.confidence?.toString() || "",
+      reasoning: parsed.reasoning || null,
+      method: parsed.method || null,
+      estimatedTime: parsed.estimatedTime?.toString() || "",
+      equityInvestment: parsed.equityInvestment?.toString() || "",
+      debtFinancing: parsed.debtFinancing?.toString() || "",
     });
   }
 
   // 5. Update prediction
-  await updatePrediction(validation.data);
+  await updatePrediction(parsed);
 
   // 6. Revalidate cache
   revalidatePath(Router.USER_FORECAST_DETAIL(forecastId));
