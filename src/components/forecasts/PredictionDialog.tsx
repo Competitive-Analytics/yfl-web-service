@@ -1,6 +1,9 @@
 "use client";
 
-import PredictionForm from "@/components/forecasts/PredictionForm";
+import PredictionForm, {
+  GroupSubmissionContext,
+  PredictionSubmissionOptions,
+} from "@/components/forecasts/PredictionForm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,7 +32,15 @@ type PredictionDialogProps = {
     estimatedTime: number | null;
     equityInvestment: number | null;
     debtFinancing: number | null;
+    isGroupPrediction?: boolean;
+    submittedBy?: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
   } | null;
+  groupContext?: GroupSubmissionContext | null;
+  submissionOptions?: PredictionSubmissionOptions;
 };
 
 export default function PredictionDialog({
@@ -38,6 +49,8 @@ export default function PredictionDialog({
   forecastType,
   categoricalOptions = [],
   existingPrediction,
+  groupContext,
+  submissionOptions,
 }: PredictionDialogProps) {
   const [open, setOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -115,6 +128,8 @@ export default function PredictionDialog({
                 categoricalOptions={categoricalOptions}
                 existingPrediction={existingPrediction}
                 onSuccess={handleSuccess}
+                groupContext={groupContext}
+                submissionOptions={submissionOptions}
               />
             </div>
           </>

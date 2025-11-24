@@ -66,6 +66,11 @@ const orgAdminNavItems: NavItem[] = [
     url: Router.ORG_ADMIN_USERS,
     icon: IconUsers,
   },
+  {
+    title: "Groups",
+    url: Router.ORG_ADMIN_GROUPS,
+    icon: IconUsers,
+  },
 ];
 
 const userNavItems: NavItem[] = [
@@ -78,6 +83,16 @@ const userNavItems: NavItem[] = [
     title: "Leaderboard",
     url: Router.LEADERBOARD_USERS,
     icon: IconListDetails,
+  },
+  {
+    title: "Group Leaderboard",
+    url: Router.LEADERBOARD_GROUPS,
+    icon: IconGraph,
+  },
+  {
+    title: "My Group",
+    url: Router.USER_GROUP,
+    icon: IconUsers,
   },
   {
     title: "Summary",

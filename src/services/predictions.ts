@@ -8,8 +8,6 @@ import type {
  * Get a prediction by ID
  */
 export async function getPredictionById(id: string) {
-  console.log("🔍 Fetching forecasts for:", { id });
-
   return await prisma.prediction.findUnique({
     where: { id },
     include: {
@@ -18,6 +16,9 @@ export async function getPredictionById(id: string) {
       },
       user: {
         select: { id: true, name: true, email: true },
+      },
+      group: {
+        select: { id: true, name: true },
       },
     },
   });
@@ -41,6 +42,37 @@ export async function getUserPredictionForForecast(
       forecast: {
         select: { id: true, title: true, type: true, dueDate: true },
       },
+      user: {
+        select: { id: true, name: true, email: true },
+      },
+      group: {
+        select: { id: true, name: true },
+      },
+    },
+  });
+}
+
+/**
+ * Get a group's prediction for a specific forecast
+ */
+export async function getGroupPredictionForForecast(
+  groupId: string,
+  forecastId: string
+) {
+  return await prisma.prediction.findUnique({
+    where: {
+      forecastId_groupId: {
+        forecastId,
+        groupId,
+      },
+    },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true },
+      },
+      group: {
+        select: { id: true, name: true },
+      },
     },
   });
 }
@@ -54,6 +86,9 @@ export async function getPredictionsForForecast(forecastId: string) {
     include: {
       user: {
         select: { id: true, name: true, email: true },
+      },
+      group: {
+        select: { id: true, name: true },
       },
     },
     orderBy: {
@@ -102,6 +137,12 @@ export async function getForecastLeaderboard(forecastId: string) {
           email: true,
         },
       },
+      group: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: [
       {
@@ -126,6 +167,7 @@ export async function createPrediction(
     data: {
       forecastId: data.forecastId,
       userId: data.userId,
+      groupId: data.groupId || null,
       value: data.value,
       confidence: data.confidence,
       reasoning: data.reasoning,
@@ -137,6 +179,9 @@ export async function createPrediction(
     include: {
       forecast: {
         select: { id: true, title: true, type: true },
+      },
+      group: {
+        select: { id: true, name: true },
       },
     },
   });
@@ -160,6 +205,9 @@ export async function updatePrediction(data: UpdatePredictionInput) {
     include: {
       forecast: {
         select: { id: true, title: true, type: true },
+      },
+      group: {
+        select: { id: true, name: true },
       },
     },
   });
@@ -218,16 +266,22 @@ export async function validatePredictionCreation(
   { valid: true } | { valid: false; errors: Record<string, string[]> }
 > {
   const errors: Record<string, string[]> = {};
+  const addFormError = (message: string) => {
+    errors._form = [...(errors._form ?? []), message];
+  };
 
-  // Check if user already has a prediction for this forecast
-  const existingPrediction = await getUserPredictionForForecast(
-    data.userId,
-    data.forecastId
-  );
+  const [existingPrediction, userMembership] = await Promise.all([
+    getUserPredictionForForecast(data.userId, data.forecastId),
+    prisma.groupMember.findUnique({
+      where: { userId: data.userId },
+      select: { groupId: true },
+    }),
+  ]);
+
   if (existingPrediction) {
-    errors._form = [
-      "You have already submitted a prediction for this forecast. Please update your existing prediction instead.",
-    ];
+    addFormError(
+      "You have already submitted an individual prediction for this forecast. Please update your existing prediction instead."
+    );
   }
 
   // Get the forecast to validate due date
@@ -236,15 +290,60 @@ export async function validatePredictionCreation(
   });
 
   if (!forecast) {
-    errors._form = ["Forecast not found"];
+    addFormError("Forecast not found");
     return { valid: false, errors };
   }
 
   // Check if forecast is still open (due date hasn't passed)
   if (new Date(forecast.dueDate) <= new Date()) {
-    errors._form = [
-      "This forecast has already closed. Predictions can no longer be submitted.",
-    ];
+    addFormError(
+      "This forecast has already closed. Predictions can no longer be submitted."
+    );
+  }
+
+  if (data.groupId) {
+    const group = await prisma.group.findUnique({
+      where: { id: data.groupId },
+      select: { id: true, organizationId: true },
+    });
+
+    if (!group) {
+      addFormError("Selected group was not found.");
+    } else if (group.organizationId !== forecast.organizationId) {
+      addFormError(
+        "This group does not belong to the forecast's organization."
+      );
+    }
+
+    if (!userMembership || userMembership.groupId !== data.groupId) {
+      addFormError(
+        "You must belong to this group in order to submit a group prediction."
+      );
+    }
+
+    if (group) {
+      const existingGroupPrediction = await getGroupPredictionForForecast(
+        group.id,
+        data.forecastId
+      );
+
+      if (existingGroupPrediction) {
+        addFormError(
+          "This group has already submitted a prediction for this forecast."
+        );
+      }
+    }
+  } else if (userMembership?.groupId) {
+    const existingGroupPrediction = await getGroupPredictionForForecast(
+      userMembership.groupId,
+      data.forecastId
+    );
+
+    if (existingGroupPrediction) {
+      addFormError(
+        "Your group has already submitted a prediction for this forecast. You cannot submit an individual prediction."
+      );
+    }
   }
 
   // For categorical forecasts, validate the value is one of the options
