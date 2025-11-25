@@ -3,7 +3,7 @@ import { getCategories } from "@/services/categories";
 import { getForecasts } from "@/services/forecasts";
 import { getOrganizationCategoryLeaderboard } from "@/services/leaderboard";
 import { getOrganizationByIdMinimal } from "@/services/organizations";
-import CategoryLeaderboardView from "@/views/leaderboard/CategoryLeaderboardView";
+import UnifiedLeaderboardView from "@/views/leaderboard/UnifiedLeaderboardView";
 import { redirect } from "next/navigation";
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
@@ -43,7 +43,8 @@ export default async function CategoriesLeaderboardPage({
   ]);
 
   return (
-    <CategoryLeaderboardView
+    <UnifiedLeaderboardView
+      viewType="CATEGORY"
       data={leaderboardData}
       organizationName={organization?.name || "Your Organization"}
       forecasts={forecasts.forecasts.map(

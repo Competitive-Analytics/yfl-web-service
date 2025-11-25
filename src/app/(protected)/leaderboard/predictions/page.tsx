@@ -3,7 +3,7 @@ import { getCategories } from "@/services/categories";
 import { getForecasts } from "@/services/forecasts";
 import { getOrganizationPredictionLeaderboard } from "@/services/leaderboard";
 import { getOrganizationByIdMinimal } from "@/services/organizations";
-import PredictionLeaderboardView from "@/views/leaderboard/PredictionLeaderboardView";
+import UnifiedLeaderboardView from "@/views/leaderboard/UnifiedLeaderboardView";
 import { redirect } from "next/navigation";
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
@@ -44,7 +44,8 @@ export default async function PredictionsLeaderboardPage({
   ]);
 
   return (
-    <PredictionLeaderboardView
+    <UnifiedLeaderboardView
+      viewType="PREDICTION"
       data={leaderboardData}
       organizationName={organization?.name || "Your Organization"}
       forecasts={forecasts.forecasts.map(

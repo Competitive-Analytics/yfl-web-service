@@ -16,6 +16,7 @@ export default function LeaderboardLayout({
     { name: "Users", href: Router.LEADERBOARD_USERS },
     { name: "Predictions", href: Router.LEADERBOARD_PREDICTIONS },
     { name: "Categories", href: Router.LEADERBOARD_CATEGORIES },
+    { name: "Groups", href: Router.LEADERBOARD_GROUPS },
   ];
 
   return (

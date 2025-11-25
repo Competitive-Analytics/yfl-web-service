@@ -85,11 +85,6 @@ const userNavItems: NavItem[] = [
     icon: IconListDetails,
   },
   {
-    title: "Group Leaderboard",
-    url: Router.LEADERBOARD_GROUPS,
-    icon: IconGraph,
-  },
-  {
     title: "My Group",
     url: Router.USER_GROUP,
     icon: IconUsers,

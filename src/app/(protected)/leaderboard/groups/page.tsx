@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { getGroupLeaderboardWithSort } from "@/services/leaderboard";
 import { getOrganizationByIdMinimal } from "@/services/organizations";
-import GroupLeaderboardView from "@/views/leaderboard/GroupLeaderboardView";
+import UnifiedLeaderboardView from "@/views/leaderboard/UnifiedLeaderboardView";
 import { redirect } from "next/navigation";
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
@@ -37,7 +37,8 @@ export default async function GroupLeaderboardPage({
   ]);
 
   return (
-    <GroupLeaderboardView
+    <UnifiedLeaderboardView
+      viewType="GROUP"
       data={entries}
       organizationName={organization?.name || "Your Organization"}
     />

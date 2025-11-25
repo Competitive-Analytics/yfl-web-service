@@ -3,7 +3,7 @@ import { getCategories } from "@/services/categories";
 import { getForecasts } from "@/services/forecasts";
 import { getOrganizationLeaderboardWithSort } from "@/services/leaderboard";
 import { getOrganizationByIdMinimal } from "@/services/organizations";
-import LeaderboardView from "@/views/leaderboard/LeaderboardView";
+import UnifiedLeaderboardView from "@/views/leaderboard/UnifiedLeaderboardView";
 import { redirect } from "next/navigation";
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
@@ -46,7 +46,8 @@ export default async function UsersLeaderboardPage({
   ]);
 
   return (
-    <LeaderboardView
+    <UnifiedLeaderboardView
+      viewType="USER"
       data={leaderboardData}
       organizationName={organization?.name || "Your Organization"}
       isOrgAdmin={true}
