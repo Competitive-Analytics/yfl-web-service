@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Separator } from "./ui/separator";
 import ViewsManager from "./views-manager";
 
-type ViewType = "USER" | "PREDICTION" | "CATEGORY";
+type ViewType = "USER" | "PREDICTION" | "CATEGORY" | "GROUP";
 
 type LeaderboardColumnControlsProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

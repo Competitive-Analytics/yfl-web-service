@@ -76,6 +76,8 @@ type UnifiedLeaderboardViewProps = {
   | {
       viewType: "GROUP";
       data: GroupLeaderboardEntry[];
+      forecasts: Forecast[];
+      categories: Category[];
     }
 );
 
@@ -920,9 +922,6 @@ export default function UnifiedLeaderboardView(
     }
   };
 
-  // Determine if we should show filters (not for GROUP view)
-  const shouldShowFilters = viewType !== "GROUP";
-
   // Get current filters for saving (needed for column controls)
   const getCurrentFilters = () => {
     const params = new URLSearchParams(searchParams);
@@ -1016,24 +1015,23 @@ export default function UnifiedLeaderboardView(
       </div>
 
       {/* Column Controls - Only show for views that have filters */}
-      {shouldShowFilters && (
-        <LeaderboardColumnControls
-          table={table}
-          isOrgAdmin={"isOrgAdmin" in props ? props.isOrgAdmin : false}
-          viewType={viewType}
-          currentFilters={getCurrentFilters()}
-          onApplyView={handleApplyView}
-          filtersButton={
-            <LeaderboardSidebar viewType={viewType}>
-              <LeaderboardFilters
-                forecasts={"forecasts" in props ? props.forecasts : []}
-                categories={"categories" in props ? props.categories : []}
-                participantCount={props.data.length}
-              />
-            </LeaderboardSidebar>
-          }
-        />
-      )}
+
+      <LeaderboardColumnControls
+        table={table}
+        isOrgAdmin={"isOrgAdmin" in props ? props.isOrgAdmin : false}
+        viewType={viewType}
+        currentFilters={getCurrentFilters()}
+        onApplyView={handleApplyView}
+        filtersButton={
+          <LeaderboardSidebar viewType={viewType}>
+            <LeaderboardFilters
+              forecasts={"forecasts" in props ? props.forecasts : []}
+              categories={"categories" in props ? props.categories : []}
+              participantCount={props.data.length}
+            />
+          </LeaderboardSidebar>
+        }
+      />
 
       {/* Table */}
       <div className="rounded-md border overflow-hidden">
