@@ -27,7 +27,7 @@ export default async function UserForecastsPage({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
-  const pageSize = parseInt(params.pageSize || "10", 10);
+  const pageSize = parseInt(params.pageSize || "50", 10);
 
   // Get upcoming forecasts for the user's organization
   const result = await getUpcomingForecastsForUser({
