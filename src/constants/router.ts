@@ -17,7 +17,9 @@ class Router {
     `${Router.ORGANIZATIONS}/${orgId}/forecasts/${forecastId}`;
 
   // Settings
-  static SETTINGS = "/settings"; // swapnil got it
+  static SETTINGS = "/settings";
+  static SETTINGS_OVERVIEW = "/settings";
+  static SETTINGS_USERS = "/settings/users";
 
   // Org Admin
   static ORG_ADMIN_USERS = "/users";

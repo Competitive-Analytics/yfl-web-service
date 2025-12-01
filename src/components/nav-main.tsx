@@ -36,6 +36,9 @@ export function NavMain({ items }: NavMainProps) {
             const isOpen =
               openItems[item.title] || pathname.startsWith(item.url);
             const hasSubItems = item.items && item.items.length > 0;
+            // Check if the current path matches this item or starts with its URL
+            const isActive =
+              pathname === item.url || pathname.startsWith(item.url + "/");
 
             return (
               <SidebarMenuItem key={item.title}>
@@ -71,7 +74,11 @@ export function NavMain({ items }: NavMainProps) {
                     )}
                   </>
                 ) : (
-                  <SidebarMenuButton asChild tooltip={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={item.title}
+                    isActive={isActive}
+                  >
                     <Link href={item.url}>
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>

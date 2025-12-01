@@ -412,8 +412,16 @@ export async function getUserForecasts({
   }
 
   // Build order by clause
-  const VALID_SORT_FIELDS = ["dueDate", "dataReleaseDate", "title", "createdAt"] as const;
-  const safeSortBy = VALID_SORT_FIELDS.includes(sortBy as any) ? sortBy : "dueDate";
+  const VALID_SORT_FIELDS = [
+    "dueDate",
+    "dataReleaseDate",
+    "title",
+    "createdAt",
+  ] as const;
+  type ValidSortField = (typeof VALID_SORT_FIELDS)[number];
+  const safeSortBy = VALID_SORT_FIELDS.includes(sortBy as ValidSortField)
+    ? sortBy
+    : "dueDate";
   const orderBy: Prisma.ForecastOrderByWithRelationInput = {
     [safeSortBy]: sortOrder,
   };
