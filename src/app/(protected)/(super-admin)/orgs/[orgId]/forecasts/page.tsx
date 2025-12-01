@@ -26,7 +26,7 @@ export default async function OrgsForecastsPage({
   const { orgId } = await params;
   const {
     page = "1",
-    pageSize = "1000",
+    pageSize = "50",
     search,
     type,
     sortBy = "createdAt",

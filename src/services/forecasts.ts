@@ -31,7 +31,7 @@ export async function getForecasts({
   organizationId,
   userId,
   page = 1,
-  limit = 1000,
+  limit = 50,
   search,
   type,
   sortBy = "createdAt",
