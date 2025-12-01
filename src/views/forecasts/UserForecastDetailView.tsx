@@ -82,6 +82,17 @@ export default function UserForecastDetailView({
           </Button>
           <h1 className="text-3xl font-bold">{forecast.title}</h1>
         </div>
+
+      {/* Top-right Make Prediction button (hidden after due date) */}
+      {!isExpired && (
+          <PredictionDialog
+            forecastId={forecast.id}
+            forecastTitle={forecast.title}
+            forecastType={forecast.type}
+            categoricalOptions={options}
+            existingPrediction={existingPrediction}
+          />
+        )}
       </div>
 
       {/* Key Information Card */}
@@ -155,34 +166,6 @@ export default function UserForecastDetailView({
           )}
         </CardContent>
       </Card>
-      {/* Submit/Update Prediction Button - TOP PRIORITY */}
-      {!isExpired && (
-        <Card className="border-primary">
-          <CardContent>
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold">
-                  {existingPrediction
-                    ? "Update Your Prediction"
-                    : "Submit Your Prediction"}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {existingPrediction
-                    ? "You can update your prediction until the due date"
-                    : "Make your forecast before the due date"}
-                </p>
-              </div>
-              <PredictionDialog
-                forecastId={forecast.id}
-                forecastTitle={forecast.title}
-                forecastType={forecast.type}
-                categoricalOptions={options}
-                existingPrediction={existingPrediction}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Your Prediction (if submitted) */}
       {existingPrediction && (
