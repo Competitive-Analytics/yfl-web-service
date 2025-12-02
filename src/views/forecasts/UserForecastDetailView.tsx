@@ -129,6 +129,17 @@ export default function UserForecastDetailView({
           </Button>
           <h1 className="text-3xl font-bold">{forecast.title}</h1>
         </div>
+
+        {/* Top-right Make Prediction button (hidden after due date) */}
+        {!isExpired && (
+          <PredictionDialog
+            forecastId={forecast.id}
+            forecastTitle={forecast.title}
+            forecastType={forecast.type}
+            categoricalOptions={options}
+            existingPrediction={existingPrediction}
+          />
+        )}
       </div>
 
       <Card>
@@ -373,7 +384,9 @@ export default function UserForecastDetailView({
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Result:</span>
                       <Badge
-                        variant={prediction.isCorrect ? "default" : "destructive"}
+                        variant={
+                          prediction.isCorrect ? "default" : "destructive"
+                        }
                       >
                         {prediction.isCorrect ? "Correct" : "Incorrect"}
                       </Badge>
@@ -466,7 +479,9 @@ export default function UserForecastDetailView({
                 <div className="grid gap-3 text-sm">
                   {prediction.brierScore !== null && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Brier Score:</span>
+                      <span className="text-muted-foreground">
+                        Brier Score:
+                      </span>
                       <span className="font-semibold">
                         {prediction.brierScore?.toFixed(3)}
                       </span>

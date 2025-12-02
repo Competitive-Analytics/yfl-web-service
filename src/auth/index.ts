@@ -1,7 +1,7 @@
 import config from "@/constants/config";
 import { Role } from "@/generated/prisma";
 import prisma from "@/lib/prisma";
-import { ensureStartingBalancesForUser } from "@/services/finance";
+import { sendMagicLinkAfterCreate } from "@/services/auth-email";
 import { userEmailExists } from "@/services/users";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type {
@@ -39,7 +39,6 @@ function emailHtml({
   accent = "#4f46e5",
   logoUrl,
 }: EmailHtmlParams) {
-  // Optional logo block to avoid unused param errors
   const logoBlock = logoUrl
     ? `<tr><td align="center" style="padding-bottom:16px;">
          <img src="${logoUrl}" alt="${product} logo" width="48" height="48" style="display:block;border:0" />
@@ -80,7 +79,7 @@ function emailHtml({
     </html>`;
 }
 
-/** ---------- Keep your existing config, add custom mailer ---------- */
+/** ---------- Custom mailer ---------- */
 
 const transporter = nodemailer.createTransport({
   host: config.nextAuth.email.server.host,
@@ -99,7 +98,6 @@ const authConfig: AuthOptions = {
     signIn: "/signin",
     error: "/invalid-email", // Error code passed in query string as ?error=
   },
-  // Use JWT strategy for better performance (no DB query on every session access)
   session: {
     strategy: "jwt",
   },
@@ -114,9 +112,8 @@ const authConfig: AuthOptions = {
         },
       },
       from: config.nextAuth.email.from,
-      maxAge: 60 * 60, // 1 hour (optional tweak)
+      maxAge: 60 * 60, // 1 hour
 
-      // ⭐️ Custom email content while keeping everything else the same
       async sendVerificationRequest({ identifier, url, provider }) {
         const host = new URL(url).host;
 
@@ -131,7 +128,7 @@ const authConfig: AuthOptions = {
               host,
               product: "yFL",
               accent: "#4f46e5",
-              logoUrl: `${config.publicUrl ?? ""}/email/logo.png`,
+              logoUrl: `${config.publicUrl}/email/logo.png`,
             }),
             headers: { "X-Entity-Ref-ID": Date.now().toString() },
           });
@@ -139,34 +136,44 @@ const authConfig: AuthOptions = {
           console.log("[NextAuth] Magic link sent to", identifier);
         } catch (err) {
           console.error("[NextAuth] Error sending magic link to", identifier, err);
-          // Re-throw so NextAuth shows EmailSignin
           throw err;
         }
       },
     }),
   ],
-  
+
   events: {
     async createUser({ user }) {
+      // Send sign-in email immediately when user is created
       try {
-        await ensureStartingBalancesForUser(user.id);
+        if (user.email) {
+          await sendMagicLinkAfterCreate(user.email);
+          console.log(
+            "[NextAuth] Magic link requested for new user:",
+            user.email
+          );
+        } else {
+          console.warn(
+            "[NextAuth] User created without email — cannot send magic link"
+          );
+        }
       } catch (err) {
-        console.error("ensureStartingBalancesForUser failed on createUser:", err);
+        console.error(
+          "[NextAuth] Failed to send magic link after user creation:",
+          err
+        );
       }
     },
   },
 
   callbacks: {
-    // JWT callback: runs when JWT is created or updated
     async jwt({ token, user, trigger }) {
-      // Initial sign in – user object is available
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.organizationId = user.organizationId;
       }
 
-      // Handle token refresh or manual update
       if (trigger === "update") {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
@@ -181,7 +188,6 @@ const authConfig: AuthOptions = {
       return token;
     },
 
-    // Sign-in callback: runs each time a user logs in
     async signIn({ user, account, email }) {
       if (account?.provider === "email" && email?.verificationRequest) {
         if (!user?.email) return false;
@@ -192,7 +198,6 @@ const authConfig: AuthOptions = {
       return true;
     },
 
-    // Session callback: runs when session is created or checked
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
@@ -202,12 +207,10 @@ const authConfig: AuthOptions = {
       return session;
     },
   },
-
 };
 
 export const handlers = NextAuth(authConfig);
 
-// Use it in server contexts
 export function auth(
   ...args:
     | [GetServerSidePropsContext["req"], GetServerSidePropsContext["res"]]

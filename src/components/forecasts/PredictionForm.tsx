@@ -423,7 +423,7 @@ export default function PredictionForm({
             </p>
           </div>
 
-          {/* Debt Financing - NOW REQUIRED */}
+          {/* Debt Financing */}
           <div className="space-y-2">
             <Label htmlFor="debtFinancing">
               Debt Financing <span className="text-destructive">*</span>

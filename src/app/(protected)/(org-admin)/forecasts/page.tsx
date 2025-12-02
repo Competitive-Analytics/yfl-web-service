@@ -31,7 +31,7 @@ export default async function ForecastsPage({ searchParams }: PageProps) {
 
   const {
     page = "1",
-    pageSize = "10",
+    pageSize = "50",
     search,
     type,
     sortBy = "createdAt",

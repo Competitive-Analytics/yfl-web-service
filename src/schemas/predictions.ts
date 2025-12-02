@@ -35,18 +35,22 @@ export const createPredictionSchema = z
       .nullable(),
 
     // 🔐 Equity constraints: non-negative, integer, max 20M, optional
-    equityInvestment: z
-      .coerce
+    equityInvestment: z.coerce
       .number()
       .int("Equity investment must be a whole-dollar amount (no decimals).")
       .min(0, "Equity investment must be at least 0")
       .max(20_000_000, "Equity investment cannot exceed 20,000,000")
       .optional(),
 
-    debtFinancing: z.coerce
-      .number()
-      .min(0, "Debt financing must be at least 0")
-      .optional(),
+    debtFinancing: z.preprocess((val) => {
+      // Check if the value is an empty string or null/undefined
+      if (val === "" || val === null || val === undefined) {
+        return undefined; // This will trigger the error
+      }
+      // Convert string to number
+      const num = Number(val);
+      return isNaN(num) ? val : num;
+    }, z.number({ message: "Please enter a value" }).min(0, "Debt financing must be at least 0")),
   })
   .refine(
     (data) => {
@@ -110,18 +114,22 @@ export const updatePredictionSchema = z
       .nullable(),
 
     // 🔐 Same equity rules for updates
-    equityInvestment: z
-      .coerce
+    equityInvestment: z.coerce
       .number()
       .int("Equity investment must be a whole-dollar amount (no decimals).")
       .min(0, "Equity investment must be at least 0")
       .max(20_000_000, "Equity investment cannot exceed 20,000,000")
       .optional(),
 
-    debtFinancing: z.coerce
-      .number()
-      .min(0, "Debt financing must be at least 0")
-      .optional(),
+    debtFinancing: z.preprocess((val) => {
+      // Check if the value is an empty string or null/undefined
+      if (val === "" || val === null || val === undefined) {
+        return undefined; // This will trigger the error
+      }
+      // Convert string to number
+      const num = Number(val);
+      return isNaN(num) ? val : num;
+    }, z.number({ message: "Please enter a value" }).min(0, "Debt financing must be at least 0")),
   })
   .refine(
     (data) => {

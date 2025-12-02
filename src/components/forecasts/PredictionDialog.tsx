@@ -57,16 +57,12 @@ export default function PredictionDialog({
   const isUpdate = !!existingPrediction;
 
   const handleSuccess = () => {
-    // Switch dialog into "success" mode and wait for user to close
     setShowSuccess(true);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
-    // Reset success state whenever the dialog is fully closed
-    if (!nextOpen) {
-      setShowSuccess(false);
-    }
+    if (!nextOpen) setShowSuccess(false);
   };
 
   return (
@@ -81,7 +77,7 @@ export default function PredictionDialog({
           ) : (
             <>
               <Plus className="mr-2 h-4 w-4" />
-              Submit Prediction
+              Make Prediction   {/* ← CHANGED HERE */}
             </>
           )}
         </Button>
@@ -94,8 +90,7 @@ export default function PredictionDialog({
               <DialogTitle>Prediction submitted</DialogTitle>
               <DialogDescription>
                 Your prediction for &quot;{forecastTitle}&quot; has been saved
-                successfully. You can close this dialog or reopen it later to
-                edit your prediction before the deadline.
+                successfully.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="mt-4">
@@ -113,14 +108,15 @@ export default function PredictionDialog({
           <>
             <DialogHeader>
               <DialogTitle>
-                {isUpdate ? "Update Your Prediction" : "Submit Your Prediction"}
+                {isUpdate ? "Update Your Prediction" : "Make Your Prediction"}
               </DialogTitle>
               <DialogDescription>
                 {isUpdate
-                  ? `Update your prediction for "${forecastTitle}". You can change your prediction anytime before the deadline.`
-                  : `Submit your prediction for "${forecastTitle}". You can update it later if needed.`}
+                  ? `Update your prediction for "${forecastTitle}".`
+                  : `Submit your prediction for "${forecastTitle}".`}
               </DialogDescription>
             </DialogHeader>
+
             <div className="mt-4">
               <PredictionForm
                 forecastId={forecastId}
