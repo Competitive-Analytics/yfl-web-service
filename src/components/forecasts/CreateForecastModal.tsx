@@ -372,6 +372,7 @@ export default function CreateForecastModal({
               <Popover
                 open={showCategoryPopover}
                 onOpenChange={setShowCategoryPopover}
+                modal={true}
               >
                 <PopoverTrigger asChild>
                   <Button
