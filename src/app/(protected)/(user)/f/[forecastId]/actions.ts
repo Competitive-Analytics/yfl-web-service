@@ -21,6 +21,7 @@ import {
   validatePredictionUpdate,
 } from "@/services/predictions";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 type PredictionFormData = {
   value: string;
@@ -75,9 +76,7 @@ export async function createPredictionAction(
     equityInvestment: rawData.equityInvestment
       ? formDataToString(rawData.equityInvestment)
       : undefined,
-    debtFinancing: rawData.debtFinancing
-      ? formDataToString(rawData.debtFinancing)
-      : undefined,
+    debtFinancing: formDataToString(rawData.debtFinancing),
   });
 
   if (!validation.success) {
@@ -117,9 +116,10 @@ export async function createPredictionAction(
   });
 
   // 6. Revalidate cache
-  revalidatePath(Router.USER_FORECAST_DETAIL(forecastId));
+  revalidatePath(Router.USER_FORECASTS);
 
-  return { success: true };
+  // 7. Redirect to forecasts page
+  redirect(Router.USER_FORECASTS);
 }
 
 export async function updatePredictionAction(
@@ -166,9 +166,7 @@ export async function updatePredictionAction(
     equityInvestment: rawData.equityInvestment
       ? formDataToString(rawData.equityInvestment)
       : undefined,
-    debtFinancing: rawData.debtFinancing
-      ? formDataToString(rawData.debtFinancing)
-      : undefined,
+    debtFinancing: formDataToString(rawData.debtFinancing),
   });
 
   if (!validation.success) {
@@ -202,7 +200,8 @@ export async function updatePredictionAction(
   await updatePrediction(validation.data);
 
   // 6. Revalidate cache
-  revalidatePath(Router.USER_FORECAST_DETAIL(forecastId));
+  revalidatePath(Router.USER_FORECASTS);
 
-  return { success: true };
+  // 7. Redirect to forecasts page
+  redirect(Router.USER_FORECASTS);
 }
