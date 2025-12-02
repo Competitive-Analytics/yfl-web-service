@@ -6,7 +6,7 @@ import {
   IconGraph,
   IconInnerShadowTop,
   IconListDetails,
-  IconUsers,
+  IconSettings,
   type Icon,
   type IconProps,
 } from "@tabler/icons-react";
@@ -62,9 +62,9 @@ const orgAdminNavItems: NavItem[] = [
     icon: IconEaseOutControlPoint,
   },
   {
-    title: "Users",
-    url: Router.ORG_ADMIN_USERS,
-    icon: IconUsers,
+    title: "Settings",
+    url: Router.SETTINGS,
+    icon: IconSettings,
   },
 ];
 
