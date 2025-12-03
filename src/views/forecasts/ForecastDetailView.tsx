@@ -559,7 +559,6 @@ export default function ForecastDetailView({
         open={showEditModal}
         onOpenChange={setShowEditModal}
         isOrgAdmin={isOrgAdmin}
-        categories={categories}
       />
 
       {/* Set Actual Value Dialog */}
