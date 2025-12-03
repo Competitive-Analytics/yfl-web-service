@@ -1,4 +1,4 @@
-import { DataType, ForecastType } from "@/generated/prisma";
+import { DataType, ForecastType, PredictionType } from "@/generated/prisma";
 import { z } from "zod";
 
 /**
@@ -24,6 +24,11 @@ export const createForecastSchema = z
       })
       .optional()
       .nullable(),
+    predictionType: z
+      .nativeEnum(PredictionType, {
+        message: "Invalid prediction type",
+      })
+      .default(PredictionType.INDIVIDUAL),
     dueDate: z.string().min(1, "Due date is required"),
     dataReleaseDate: z.string().min(1, "Release date is required"),
     actualValue: z.string().optional().nullable(),
@@ -128,6 +133,11 @@ export const updateForecastSchema = z
       })
       .optional()
       .nullable(),
+    predictionType: z
+      .nativeEnum(PredictionType, {
+        message: "Invalid prediction type",
+      })
+      .default(PredictionType.INDIVIDUAL),
     dueDate: z.string().min(1, "Due date is required"),
     dataReleaseDate: z.string().min(1, "Release date is required"),
     actualValue: z.string().optional().nullable(),

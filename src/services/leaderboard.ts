@@ -169,6 +169,24 @@ type RawLeaderboardEntry = Omit<
   avgTimePerForecastMinutes: Decimal | null;
 };
 
+export type GroupLeaderboardEntry = Omit<
+  LeaderboardEntry,
+  "userId" | "userName" | "userEmail"
+> & {
+  groupId: string;
+  groupName: string;
+  memberCount: number;
+};
+
+type RawGroupLeaderboardEntry = Omit<
+  RawLeaderboardEntry,
+  "userId" | "userName" | "userEmail"
+> & {
+  groupId: string;
+  groupName: string;
+  memberCount: number;
+};
+
 /**
  * Convert Decimal objects to numbers for Client Component compatibility
  */
@@ -259,6 +277,27 @@ function convertDecimalsToNumbers(raw: RawLeaderboardEntry): LeaderboardEntry {
     avgTimePerForecastMinutes: raw.avgTimePerForecastMinutes
       ? Number(raw.avgTimePerForecastMinutes)
       : null,
+  };
+}
+
+function convertGroupDecimalsToNumbers(
+  raw: RawGroupLeaderboardEntry
+): GroupLeaderboardEntry {
+  const userLike = {
+    ...(raw as Omit<RawLeaderboardEntry, "userId" | "userName" | "userEmail">),
+    userId: raw.groupId,
+    userName: raw.groupName,
+    userEmail: "",
+  } as RawLeaderboardEntry;
+
+  const converted = convertDecimalsToNumbers(userLike);
+  const { userId, userName, userEmail, ...rest } = converted;
+
+  return {
+    groupId: raw.groupId,
+    groupName: raw.groupName,
+    memberCount: Number(raw.memberCount),
+    ...rest,
   };
 }
 
@@ -445,6 +484,15 @@ export async function getOrganizationLeaderboard(
 }
 
 /**
+ * Get aggregated leaderboard data by group for an organization.
+ */
+export async function getGroupLeaderboard(organizationId: string) {
+  return getGroupLeaderboardWithSort({
+    organizationId,
+  });
+}
+
+/**
  * Get detailed leaderboard with sortable columns and filters
  * This version allows custom sorting and filtering by forecast/category
  */
@@ -605,7 +653,7 @@ export async function getOrganizationLeaderboardWithSort({
   // Build HAVING clause for minimum forecasts filter
   let havingClause = "";
   if (minForecasts) {
-    havingClause = `HAVING COUNT(p.id) >= ${minForecasts}`;
+    havingClause = `HAVING COUNT(*) >= ${minForecasts}`;
   }
 
   // Use $queryRawUnsafe for dynamic ORDER BY
@@ -745,6 +793,305 @@ export async function getOrganizationLeaderboardWithSort({
   );
 
   return result.map(convertDecimalsToNumbers);
+}
+
+/**
+ * Group-level leaderboard with filters and sorting.
+ */
+export async function getGroupLeaderboardWithSort({
+  organizationId,
+  sortBy = "accuracyRate",
+  sortOrder = "desc",
+  forecastIds,
+  categoryIds,
+  forecastTypes,
+  recentCount,
+  minForecasts,
+  dateFrom,
+  dateTo,
+}: {
+  organizationId: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  forecastIds?: string;
+  categoryIds?: string;
+  forecastTypes?: string;
+  recentCount?: number;
+  minForecasts?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<GroupLeaderboardEntry[]> {
+  const validSortColumns = [
+    "groupName",
+    "memberCount",
+    "totalCompletedPredictions",
+    "completedBinaryPredictions",
+    "completedContinuousPredictions",
+    "totalPredictions",
+    "correctPredictions",
+    "incorrectPredictions",
+    "accuracyRate",
+    "incorrectRate",
+    "avgProbabilityBinary",
+    "highPercentContinuous",
+    "lowPercentContinuous",
+    "perfectPercentContinuous",
+    "totalEquityInvestment",
+    "totalDebtFinancing",
+    "totalInvestment",
+    "totalNetProfit",
+    "fundBalance",
+    "profitFromEquity",
+    "profitFromFinancing",
+    "roiReal",
+    "roiAverage",
+    "roiMedian",
+    "avgRoiEquityPlusDebtPct",
+    "roeReal",
+    "roeAverage",
+    "roeMedian",
+    "totalRoe",
+    "avgRoePct",
+    "interestPaymentOnDebt",
+    "rofReal",
+    "rofAverage",
+    "rofMedian",
+    "totalRof",
+    "avgRofPct",
+    "avgActualError",
+    "medianActualError",
+    "avgForecastError",
+    "medianForecastError",
+    "avgAbsoluteError",
+    "avgAbsoluteActualErrorPct",
+    "avgAbsoluteForecastErrorPct",
+    "totalForecastTimeMinutes",
+    "avgTimePerForecastMinutes",
+    "weightedAvgHourlyProfit",
+    "simpleAvgHourlyProfit",
+    "avgProfitPerHour",
+    "avgBrierScore",
+    "avgRoiScore",
+  ];
+
+  const sortColumn = validSortColumns.includes(sortBy)
+    ? sortBy
+    : "accuracyRate";
+  const direction = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+  const nullsPosition = direction === "DESC" ? "NULLS LAST" : "NULLS FIRST";
+
+  const conditions = [
+    'g."organizationId" = $1',
+    'f."actualValue" IS NOT NULL',
+    'p."groupId" IS NOT NULL',
+  ];
+  const params: (string | number)[] = [organizationId];
+
+  if (forecastIds) {
+    const ids = forecastIds.split(",").filter(Boolean);
+    if (ids.length > 0) {
+      const placeholders = ids
+        .map((_, i) => `$${params.length + i + 1}`)
+        .join(", ");
+      conditions.push(`f.id IN (${placeholders})`);
+      params.push(...ids);
+    }
+  }
+
+  if (categoryIds) {
+    const ids = categoryIds.split(",").filter(Boolean);
+    if (ids.length > 0) {
+      const placeholders = ids
+        .map((_, i) => `$${params.length + i + 1}`)
+        .join(", ");
+      conditions.push(`f."categoryId" IN (${placeholders})`);
+      params.push(...ids);
+    }
+  }
+
+  if (forecastTypes) {
+    const types = forecastTypes.split(",").filter(Boolean);
+    if (types.length > 0) {
+      const placeholders = types
+        .map((_, i) => `$${params.length + i + 1}::"ForecastType"`)
+        .join(", ");
+      conditions.push(`f.type IN (${placeholders})`);
+      params.push(...types);
+    }
+  }
+
+  if (dateFrom) {
+    conditions.push(`f."dataReleaseDate" >= $${params.length + 1}::timestamp`);
+    params.push(dateFrom);
+  }
+
+  if (dateTo) {
+    conditions.push(`f."dataReleaseDate" <= $${params.length + 1}::timestamp`);
+    params.push(dateTo);
+  }
+
+  let forecastSubquery = "";
+  if (recentCount) {
+    forecastSubquery = `
+      AND f.id IN (
+        SELECT id FROM "Forecast"
+        WHERE "organizationId" = $1
+        AND "actualValue" IS NOT NULL
+        ORDER BY "dataReleaseDate" DESC NULLS LAST
+        LIMIT ${recentCount}
+      )
+    `;
+  }
+
+  const whereClause = conditions.join(" AND ") + forecastSubquery;
+
+  let havingClause = "";
+  if (minForecasts) {
+    havingClause = `HAVING COUNT(p.id) >= ${minForecasts}`;
+  }
+
+  const query = `
+    WITH group_member_counts AS (
+      SELECT "groupId" as group_id, COUNT(*)::int as member_count
+      FROM "GroupMember"
+      GROUP BY "groupId"
+    ),
+    group_predictions AS (
+      SELECT 
+        g.id as group_id,
+        g.name as group_name,
+        COALESCE(gmc.member_count, 0) as member_count,
+        f.type as forecast_type,
+        p."isCorrect",
+        p."highLow",
+        p.confidence,
+        p."equityInvestment",
+        p."debtFinancing",
+        p."totalInvestment",
+        p.roe,
+        p."roePct",
+        p.rof,
+        p."rofPct",
+        p."debtRepayment",
+        p."netProfitEquityPlusDebt",
+        p."roiEquityPlusDebtPct",
+        p."profitPerHour",
+        p."estimatedTime",
+        p."absoluteActualErrorPct",
+        p."absoluteForecastErrorPct",
+        p."absoluteError",
+        p."brierScore",
+        p."roiScore"
+      FROM "Group" g
+      INNER JOIN "Prediction" p ON p."groupId" = g.id
+      INNER JOIN "Forecast" f ON f.id = p."forecastId"
+      LEFT JOIN group_member_counts gmc ON gmc.group_id = g.id
+      WHERE ${whereClause}
+    ),
+    percentile_agg AS (
+      SELECT
+        group_id,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY "roiEquityPlusDebtPct") as roi_median,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY "roePct") as roe_median,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY "rofPct") as rof_median,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY "absoluteActualErrorPct") as actual_error_median,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY "absoluteForecastErrorPct") as forecast_error_median
+      FROM group_predictions
+      WHERE "roiEquityPlusDebtPct" IS NOT NULL 
+         OR "roePct" IS NOT NULL 
+         OR "rofPct" IS NOT NULL
+         OR "absoluteActualErrorPct" IS NOT NULL
+         OR "absoluteForecastErrorPct" IS NOT NULL
+      GROUP BY group_id
+    )
+    SELECT 
+      gp.group_id as "groupId",
+      gp.group_name as "groupName",
+      MAX(gp.member_count)::int as "memberCount",
+      COUNT(*)::int as "totalCompletedPredictions",
+      COUNT(*)::int as "totalPredictions",
+      COUNT(CASE WHEN forecast_type = 'BINARY' AND confidence IS NOT NULL THEN 1 END)::int as "completedBinaryPredictions",
+      COUNT(CASE WHEN forecast_type = 'CONTINUOUS' THEN 1 END)::int as "completedContinuousPredictions",
+      COUNT(CASE WHEN "isCorrect" = true THEN 1 END)::int as "correctPredictions",
+      COUNT(CASE WHEN "isCorrect" = false THEN 1 END)::int as "incorrectPredictions",
+      CASE 
+        WHEN COUNT(CASE WHEN forecast_type = 'BINARY' THEN 1 END) > 0 THEN 
+          (COUNT(CASE WHEN "isCorrect" = true THEN 1 END)::numeric / COUNT(CASE WHEN forecast_type = 'BINARY' THEN 1 END)::numeric)
+        ELSE NULL 
+      END as "accuracyRate",
+      CASE 
+        WHEN COUNT(CASE WHEN forecast_type = 'BINARY' THEN 1 END) > 0 THEN 
+          (COUNT(CASE WHEN "isCorrect" = false THEN 1 END)::numeric / COUNT(CASE WHEN forecast_type = 'BINARY' THEN 1 END)::numeric)
+        ELSE NULL 
+      END as "incorrectRate",
+      AVG(CASE WHEN forecast_type = 'BINARY' AND confidence IS NOT NULL THEN confidence::numeric / 100 END) as "avgProbabilityBinary",
+      COUNT(CASE WHEN "highLow" = 'HIGH' THEN 1 END)::int as "highCountContinuous",
+      COUNT(CASE WHEN "highLow" = 'LOW' THEN 1 END)::int as "lowCountContinuous",
+      COUNT(CASE WHEN "highLow" = 'PERFECT' THEN 1 END)::int as "perfectCountContinuous",
+      CASE 
+        WHEN COUNT(CASE WHEN forecast_type = 'CONTINUOUS' THEN 1 END) > 0 THEN 
+          (COUNT(CASE WHEN "highLow" = 'HIGH' THEN 1 END)::numeric / COUNT(CASE WHEN forecast_type = 'CONTINUOUS' THEN 1 END)::numeric)
+        ELSE NULL 
+      END as "highPercentContinuous",
+      CASE 
+        WHEN COUNT(CASE WHEN forecast_type = 'CONTINUOUS' THEN 1 END) > 0 THEN 
+          (COUNT(CASE WHEN "highLow" = 'LOW' THEN 1 END)::numeric / COUNT(CASE WHEN forecast_type = 'CONTINUOUS' THEN 1 END)::numeric)
+        ELSE NULL 
+      END as "lowPercentContinuous",
+      CASE 
+        WHEN COUNT(CASE WHEN forecast_type = 'CONTINUOUS' THEN 1 END) > 0 THEN 
+          (COUNT(CASE WHEN "highLow" = 'PERFECT' THEN 1 END)::numeric / COUNT(CASE WHEN forecast_type = 'CONTINUOUS' THEN 1 END)::numeric)
+        ELSE NULL 
+      END as "perfectPercentContinuous",
+      SUM("equityInvestment") as "totalEquityInvestment",
+      SUM("debtFinancing") as "totalDebtFinancing",
+      SUM("totalInvestment") as "totalInvestment",
+      SUM("netProfitEquityPlusDebt") as "totalNetProfit",
+      (1000000000 + SUM("netProfitEquityPlusDebt")) as "fundBalance",
+      SUM(roe) as "profitFromEquity",
+      SUM(rof) as "profitFromFinancing",
+      CASE WHEN SUM("totalInvestment") > 0 THEN SUM("netProfitEquityPlusDebt") / SUM("totalInvestment") ELSE NULL END as "roiReal",
+      AVG("roiEquityPlusDebtPct") as "roiAverage",
+      pa.roi_median as "roiMedian",
+      AVG("roiEquityPlusDebtPct") as "avgRoiEquityPlusDebtPct",
+      CASE WHEN SUM("equityInvestment") > 0 THEN SUM(roe) / SUM("equityInvestment") ELSE NULL END as "roeReal",
+      AVG("roePct") as "roeAverage",
+      pa.roe_median as "roeMedian",
+      SUM(roe) as "totalRoe",
+      AVG("roePct") as "avgRoePct",
+      SUM("debtRepayment") as "interestPaymentOnDebt",
+      CASE WHEN SUM("debtFinancing") > 0 THEN SUM(rof) / SUM("debtFinancing") ELSE NULL END as "rofReal",
+      AVG("rofPct") as "rofAverage",
+      pa.rof_median as "rofMedian",
+      SUM(rof) as "totalRof",
+      AVG("rofPct") as "avgRofPct",
+      AVG("absoluteActualErrorPct") as "avgActualError",
+      pa.actual_error_median as "medianActualError",
+      AVG("absoluteForecastErrorPct") as "avgForecastError",
+      pa.forecast_error_median as "medianForecastError",
+      AVG("absoluteError") as "avgAbsoluteError",
+      AVG("absoluteActualErrorPct") as "avgAbsoluteActualErrorPct",
+      AVG("absoluteForecastErrorPct") as "avgAbsoluteForecastErrorPct",
+      SUM("estimatedTime") as "totalForecastTimeMinutes",
+      AVG("estimatedTime") as "avgTimePerForecastMinutes",
+      CASE WHEN SUM("estimatedTime") > 0 THEN SUM("netProfitEquityPlusDebt") / (SUM("estimatedTime") / 60.0) ELSE NULL END as "weightedAvgHourlyProfit",
+      AVG("profitPerHour") as "simpleAvgHourlyProfit",
+      AVG("profitPerHour") as "avgProfitPerHour",
+      AVG("brierScore") as "avgBrierScore",
+      AVG("roiScore") as "avgRoiScore"
+    FROM group_predictions gp
+    LEFT JOIN percentile_agg pa ON pa.group_id = gp.group_id
+    GROUP BY gp.group_id, gp.group_name, pa.roi_median, pa.roe_median, pa.rof_median, pa.actual_error_median, pa.forecast_error_median
+    ${havingClause}
+    ORDER BY "${sortColumn}" ${direction} ${nullsPosition}
+  `;
+
+  const result = await prisma.$queryRawUnsafe<RawGroupLeaderboardEntry[]>(
+    query,
+    ...params
+  );
+
+  return result.map(convertGroupDecimalsToNumbers);
 }
 
 /**

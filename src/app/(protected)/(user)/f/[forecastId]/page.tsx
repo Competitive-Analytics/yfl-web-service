@@ -3,7 +3,11 @@
 import { auth } from "@/auth";
 import Router from "@/constants/router";
 import { getForecastById } from "@/services/forecasts";
-import { getUserPredictionForForecast } from "@/services/predictions";
+import { getUserGroup } from "@/services/groups";
+import {
+  getGroupPredictionForForecast,
+  getUserPredictionForForecast,
+} from "@/services/predictions";
 import UserForecastDetailView from "@/views/forecasts/UserForecastDetailView";
 import { notFound, redirect } from "next/navigation";
 
@@ -31,16 +35,74 @@ export default async function UserForecastDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // Get the user's existing prediction (if any)
-  const existingPrediction = await getUserPredictionForForecast(
-    session.user.id,
-    forecastId
-  );
+  // Get the user's individual prediction and group context in parallel
+  const [existingPrediction, userGroup] = await Promise.all([
+    getUserPredictionForForecast(session.user.id, forecastId),
+    session.user.organizationId
+      ? getUserGroup(session.user.id, session.user.organizationId)
+      : Promise.resolve(null),
+  ]);
+
+  const groupPrediction =
+    userGroup && (await getGroupPredictionForForecast(userGroup.id, forecastId));
+
+  const activePrediction = existingPrediction ?? groupPrediction;
+  const isGroupPrediction = Boolean(!existingPrediction && groupPrediction);
+
+  const groupContext = userGroup
+    ? {
+        id: userGroup.id,
+        name: userGroup.name,
+        members: userGroup.members.map((member) => ({
+          id: member.user.id,
+          name: member.user.name,
+          email: member.user.email,
+        })),
+      }
+    : null;
+
+  const canSubmitIndividual =
+    !!existingPrediction || (!groupPrediction && !isGroupPrediction);
+  const canSubmitGroup =
+    !!userGroup && (!!groupPrediction ? isGroupPrediction : true);
+
+  const defaultSubmissionType = isGroupPrediction
+    ? "GROUP"
+    : existingPrediction
+    ? "INDIVIDUAL"
+    : canSubmitIndividual
+    ? "INDIVIDUAL"
+    : "GROUP";
 
   return (
     <UserForecastDetailView
       forecast={forecast}
-      existingPrediction={existingPrediction}
+      prediction={
+        activePrediction
+          ? {
+              ...activePrediction,
+              isGroupPrediction,
+              submittedBy: activePrediction.user
+                ? {
+                    id: activePrediction.user.id,
+                    name: activePrediction.user.name,
+                    email: activePrediction.user.email,
+                  }
+                : undefined,
+            }
+          : null
+      }
+      groupContext={groupContext}
+      submissionOptions={{
+        canSubmitIndividual,
+        canSubmitGroup,
+        defaultType: defaultSubmissionType,
+        lockedType: activePrediction
+          ? isGroupPrediction
+            ? "GROUP"
+            : "INDIVIDUAL"
+          : undefined,
+      }}
     />
   );
 }

@@ -5,6 +5,7 @@ export const leaderboardViewTypeSchema = z.enum([
   "USER",
   "PREDICTION",
   "CATEGORY",
+  "GROUP",
 ]);
 
 // Schema for leaderboard filters

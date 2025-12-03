@@ -52,7 +52,7 @@ type ViewsManagerProps = {
   currentSorting: { id: string; desc: boolean }[];
   currentColumnVisibility: Record<string, boolean>;
   onApplyView: (view: SavedView) => void;
-  viewType?: "USER" | "PREDICTION" | "CATEGORY";
+  viewType?: "USER" | "PREDICTION" | "CATEGORY" | "GROUP";
 };
 
 export default function ViewsManager({

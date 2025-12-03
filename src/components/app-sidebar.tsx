@@ -7,6 +7,7 @@ import {
   IconInnerShadowTop,
   IconListDetails,
   IconSettings,
+  IconUsers,
   type Icon,
   type IconProps,
 } from "@tabler/icons-react";
@@ -66,6 +67,11 @@ const orgAdminNavItems: NavItem[] = [
     url: Router.SETTINGS,
     icon: IconSettings,
   },
+  {
+    title: "Groups",
+    url: Router.ORG_ADMIN_GROUPS,
+    icon: IconUsers,
+  },
 ];
 
 const userNavItems: NavItem[] = [
@@ -78,6 +84,11 @@ const userNavItems: NavItem[] = [
     title: "Leaderboard",
     url: Router.LEADERBOARD_USERS,
     icon: IconListDetails,
+  },
+  {
+    title: "My Group",
+    url: Router.USER_GROUP,
+    icon: IconUsers,
   },
   {
     title: "Summary",

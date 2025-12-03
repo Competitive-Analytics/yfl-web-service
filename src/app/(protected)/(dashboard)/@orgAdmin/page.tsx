@@ -7,7 +7,7 @@ import { getForecasts } from "@/services/forecasts";
 import { getOrganizationLeaderboardWithSort } from "@/services/leaderboard";
 import { getOrganizationById } from "@/services/organizations";
 import OrgAdminDashboardView from "@/views/home/OrgAdminDashboardView";
-import LeaderboardView from "@/views/leaderboard/LeaderboardView";
+import UnifiedLeaderboardView from "@/views/leaderboard/UnifiedLeaderboardView";
 import { redirect } from "next/navigation";
 
 type PageProps = {
@@ -53,7 +53,8 @@ export default async function OrgAdminDashboardPage({
   return (
     <div className="space-y-6">
       <OrgAdminDashboardView />
-      <LeaderboardView
+      <UnifiedLeaderboardView
+        viewType="USER"
         data={leaderboardData}
         organizationName={organization.name}
         isOrgAdmin={true}

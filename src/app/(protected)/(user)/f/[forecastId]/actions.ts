@@ -31,6 +31,7 @@ type PredictionFormData = {
   estimatedTime: string;
   equityInvestment: string;
   debtFinancing: string;
+  groupId?: string | null;
 };
 
 export async function createPredictionAction(
@@ -56,7 +57,10 @@ export async function createPredictionAction(
     "estimatedTime",
     "equityInvestment",
     "debtFinancing",
+    "groupId",
   ]);
+  const groupIdValue = formDataToString(rawData.groupId);
+  const groupId = groupIdValue ? groupIdValue : undefined;
 
   // 3. Validate schema
   const validation = validateFormData(createPredictionSchema, {
@@ -77,6 +81,7 @@ export async function createPredictionAction(
       ? formDataToString(rawData.equityInvestment)
       : undefined,
     debtFinancing: formDataToString(rawData.debtFinancing),
+    groupId,
   });
 
   if (!validation.success) {
@@ -88,6 +93,7 @@ export async function createPredictionAction(
       estimatedTime: formDataToString(rawData.estimatedTime) || "",
       equityInvestment: formDataToString(rawData.equityInvestment) || "",
       debtFinancing: formDataToString(rawData.debtFinancing) || "",
+      groupId: groupId || null,
     });
   }
 
@@ -146,7 +152,10 @@ export async function updatePredictionAction(
     "estimatedTime",
     "equityInvestment",
     "debtFinancing",
+    "groupId",
   ]);
+  const groupIdValue = formDataToString(rawData.groupId);
+  const groupId = groupIdValue ? groupIdValue : undefined;
 
   // 3. Validate schema
   const validation = validateFormData(updatePredictionSchema, {
@@ -167,6 +176,7 @@ export async function updatePredictionAction(
       ? formDataToString(rawData.equityInvestment)
       : undefined,
     debtFinancing: formDataToString(rawData.debtFinancing),
+    groupId,
   });
 
   if (!validation.success) {
@@ -178,6 +188,7 @@ export async function updatePredictionAction(
       estimatedTime: formDataToString(rawData.estimatedTime) || "",
       equityInvestment: formDataToString(rawData.equityInvestment) || "",
       debtFinancing: formDataToString(rawData.debtFinancing) || "",
+      groupId: groupId || null,
     });
   }
 
@@ -193,6 +204,7 @@ export async function updatePredictionAction(
       estimatedTime: validation.data.estimatedTime?.toString() || "",
       equityInvestment: validation.data.equityInvestment?.toString() || "",
       debtFinancing: validation.data.debtFinancing?.toString() || "",
+      groupId: validation.data.groupId || null,
     });
   }
 

@@ -20,6 +20,7 @@ type ForecastFormData = {
   description: string | null;
   type: string;
   dataType: string | null;
+  predictionType: string;
   dueDate: string;
   dataReleaseDate: string | null;
   categoryId: string | null;
@@ -48,6 +49,7 @@ export async function createForecastAction(
     "description",
     "type",
     "dataType",
+    "predictionType",
     "dueDate",
     "dataReleaseDate",
     "categoryId",
@@ -82,6 +84,7 @@ export async function createForecastAction(
       description: formDataToString(rawData.description) || null,
       type: formDataToString(rawData.type),
       dataType: formDataToString(rawData.dataType) || null,
+      predictionType: formDataToString(rawData.predictionType),
       dueDate: formDataToString(rawData.dueDate),
       dataReleaseDate: formDataToString(rawData.dataReleaseDate) || null,
       categoryId,
@@ -97,6 +100,7 @@ export async function createForecastAction(
       description: validation.data.description || null,
       type: validation.data.type,
       dataType: validation.data.dataType || null,
+      predictionType: validation.data.predictionType,
       dueDate: validation.data.dueDate,
       dataReleaseDate: validation.data.dataReleaseDate || null,
       categoryId: validation.data.categoryId || null,
@@ -120,6 +124,7 @@ export async function createForecastAction(
           description: validation.data.description || null,
           type: validation.data.type,
           dataType: validation.data.dataType || null,
+          predictionType: validation.data.predictionType,
           dueDate: validation.data.dueDate,
           dataReleaseDate: validation.data.dataReleaseDate || null,
           categoryId: null,

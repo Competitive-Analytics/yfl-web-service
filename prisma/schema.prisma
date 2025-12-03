@@ -34,6 +34,11 @@ enum DataType {
   INTEGER
 }
 
+enum PredictionType {
+  INDIVIDUAL
+  GROUP
+}
+
 enum LedgerKind {
   REVENUE // cash in
   EXPENSE // cash out
@@ -45,6 +50,7 @@ enum LeaderboardViewType {
   USER // Aggregated by user (for end users)
   PREDICTION // Aggregated by prediction/forecast (for org admins)
   CATEGORY // Aggregated by category (for org admins)
+  GROUP // Aggregated by group (for org admins)
 }
 
 model Organization {
@@ -52,6 +58,7 @@ model Organization {
   name        String             @unique
   description String?
   users       User[]
+  groups      Group[]
   forecasts   Forecast[]
   categories  ForecastCategory[]
   createdAt   DateTime           @default(now())
@@ -81,8 +88,42 @@ model User {
   // Saved leaderboard views
   leaderboardViews LeaderboardView[]
 
+  // Group memberships
+  groupMemberships GroupMember[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Group {
+  id             String  @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      GroupMember[]
+  predictions  Prediction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@unique([userId])
+  @@index([userId])
 }
 
 model LedgerEntry {
@@ -164,6 +205,7 @@ model Forecast {
   description     String?
   type            ForecastType
   dataType        DataType? // Only for CONTINUOUS forecasts
+  predictionType  PredictionType    @default(INDIVIDUAL) // INDIVIDUAL or GROUP
   dueDate         DateTime // When predictions are due (includes time)
   dataReleaseDate DateTime? // When the actual data will be released (includes time)
   actualValue     String? // Actual outcome - for BINARY: "true"/"false", for CONTINUOUS: numeric string
@@ -189,7 +231,9 @@ model Prediction {
   forecastId       String
   forecast         Forecast @relation(fields: [forecastId], references: [id], onDelete: Cascade)
   userId           String
+  groupId          String?
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group            Group?   @relation(fields: [groupId], references: [id], onDelete: Cascade)
   // Store the prediction value - interpretation depends on forecast type:
   // BINARY: "true" or "false"
   // CONTINUOUS: numerical value as string
@@ -233,8 +277,10 @@ model Prediction {
   updatedAt DateTime @updatedAt
 
   @@unique([forecastId, userId])
+  @@unique([forecastId, groupId])
   @@index([forecastId])
   @@index([userId])
+  @@index([groupId])
 }
 
 model LeaderboardView {

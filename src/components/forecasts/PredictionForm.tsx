@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -15,12 +16,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ForecastType } from "@/generated/prisma";
-import { useActionState, useEffect } from "react";
+import { ForecastType, PredictionType } from "@/generated/prisma";
+import { useActionState, useEffect, useMemo, useState } from "react";
+
+export type GroupSubmissionContext = {
+  id: string;
+  name: string;
+  members: {
+    id: string;
+    name: string | null;
+    email: string;
+  }[];
+};
+
+export type PredictionSubmissionOptions = {
+  canSubmitIndividual: boolean;
+  canSubmitGroup: boolean;
+  defaultType: SubmissionScope;
+  lockedType?: SubmissionScope;
+};
+
+type SubmissionScope = "INDIVIDUAL" | "GROUP";
 
 type PredictionFormProps = {
   forecastId: string;
   forecastType: ForecastType;
+  forecastPredictionType?: PredictionType;
   categoricalOptions?: string[];
   existingPrediction?: {
     id: string;
@@ -31,9 +52,17 @@ type PredictionFormProps = {
     estimatedTime: number | null;
     equityInvestment: number | null;
     debtFinancing: number | null;
+    isGroupPrediction?: boolean;
+    submittedBy?: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
   } | null;
   isReadOnly?: boolean;
   onSuccess?: () => void;
+  groupContext?: GroupSubmissionContext | null;
+  submissionOptions?: PredictionSubmissionOptions;
 };
 
 // Central list of method options for the dropdown
@@ -65,10 +94,13 @@ export const METHOD_OPTIONS = [
 export default function PredictionForm({
   forecastId,
   forecastType,
+  forecastPredictionType = PredictionType.INDIVIDUAL,
   categoricalOptions = [],
   existingPrediction,
   isReadOnly = false,
   onSuccess,
+  groupContext,
+  submissionOptions,
 }: PredictionFormProps) {
   const isUpdate = !!existingPrediction;
 
@@ -90,6 +122,50 @@ export default function PredictionForm({
     }
   }, [state?.success, onSuccess]);
 
+  const submissionDefaults: PredictionSubmissionOptions = useMemo(() => {
+    // If forecast requires GROUP submission, lock it to GROUP
+    if (forecastPredictionType === PredictionType.GROUP && groupContext) {
+      return {
+        canSubmitIndividual: false,
+        canSubmitGroup: true,
+        defaultType: "GROUP",
+        lockedType: "GROUP",
+      };
+    }
+
+    // Otherwise use provided options or defaults
+    return (
+      submissionOptions ?? {
+        canSubmitIndividual: true,
+        canSubmitGroup: Boolean(groupContext),
+        defaultType: groupContext ? "GROUP" : "INDIVIDUAL",
+      }
+    );
+  }, [submissionOptions, groupContext, forecastPredictionType]);
+
+  const initialScope: SubmissionScope =
+    submissionDefaults.lockedType ?? submissionDefaults.defaultType;
+
+  const [scope, setScope] = useState<SubmissionScope>(initialScope);
+
+  useEffect(() => {
+    setScope(initialScope);
+  }, [initialScope]);
+
+  const effectiveScope = submissionDefaults.lockedType ?? scope ?? "INDIVIDUAL";
+  const isGroupScope = effectiveScope === "GROUP";
+  const canSelectIndividual =
+    submissionDefaults.canSubmitIndividual ||
+    submissionDefaults.lockedType === "INDIVIDUAL";
+  const canSelectGroup =
+    (submissionDefaults.canSubmitGroup && Boolean(groupContext)) ||
+    submissionDefaults.lockedType === "GROUP";
+  const showScopeSelector =
+    groupContext &&
+    !submissionDefaults.lockedType &&
+    (submissionDefaults.canSubmitGroup ||
+      submissionDefaults.canSubmitIndividual);
+
   // Show success message if submission was successful
   if (state?.success) {
     return (
@@ -108,11 +184,121 @@ export default function PredictionForm({
 
   return (
     <form action={formAction} className="space-y-6">
+      <input
+        type="hidden"
+        name="groupId"
+        value={isGroupScope && groupContext ? groupContext.id : ""}
+      />
+
       {state?.errors?._form && (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
           <p className="text-sm text-destructive">
             {state.errors._form.join(", ")}
           </p>
+        </div>
+      )}
+
+      {/* Group Forecast Notification */}
+      {forecastPredictionType === PredictionType.GROUP && groupContext && (
+        <div className="rounded-lg border border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+              i
+            </span>
+            Group Forecast
+          </h3>
+          <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
+            This forecast requires group submission. Your prediction will be
+            submitted for all members of{" "}
+            <span className="font-semibold">{groupContext.name}</span>:{" "}
+            {groupContext.members
+              .map((member) => member.name || member.email)
+              .join(", ")}
+          </p>
+        </div>
+      )}
+
+      {groupContext && forecastPredictionType !== PredictionType.GROUP && (
+        <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Submission Scope
+            </h3>
+            <p className="text-sm">
+              Choose whether to submit this forecast individually or on behalf
+              of <span className="font-medium">{groupContext.name}</span>.
+            </p>
+          </div>
+
+          {showScopeSelector ? (
+            <RadioGroup
+              className="grid gap-3 md:grid-cols-2"
+              value={scope}
+              onValueChange={(value) => setScope(value as SubmissionScope)}
+            >
+              <label
+                className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 ${
+                  !canSelectIndividual ? "opacity-60" : "hover:bg-muted"
+                }`}
+              >
+                <RadioGroupItem
+                  value="INDIVIDUAL"
+                  disabled={!canSelectIndividual}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium">Individual</div>
+                  <p className="text-sm text-muted-foreground">
+                    Counts toward your personal leaderboard metrics.
+                  </p>
+                </div>
+              </label>
+              <label
+                className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 ${
+                  !canSelectGroup ? "opacity-60" : "hover:bg-muted"
+                }`}
+              >
+                <RadioGroupItem
+                  value="GROUP"
+                  disabled={!canSelectGroup}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium">Group: {groupContext.name}</div>
+                  <p className="text-sm text-muted-foreground">
+                    Shared prediction for all group members.
+                  </p>
+                </div>
+              </label>
+            </RadioGroup>
+          ) : (
+            <div className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
+              {submissionDefaults.lockedType === "GROUP" ? (
+                <span>
+                  This forecast is locked to a <strong>group prediction</strong>
+                  . Updates will apply to {groupContext.name}.
+                </span>
+              ) : (
+                <span>
+                  This forecast is locked to your{" "}
+                  <strong>individual prediction</strong>.
+                </span>
+              )}
+            </div>
+          )}
+
+          {isGroupScope && (
+            <div className="rounded-md border bg-background px-3 py-2 text-sm">
+              <div className="font-medium">{groupContext.name} members</div>
+              <p className="text-muted-foreground">
+                {groupContext.members.length > 0
+                  ? groupContext.members
+                      .map((member) => member.name || member.email)
+                      .join(", ")
+                  : "No members are assigned to this group yet."}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

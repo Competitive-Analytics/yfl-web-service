@@ -28,6 +28,11 @@ export const createPredictionSchema = z
       .int()
       .min(0, "Estimated time must be at least 0")
       .optional(),
+    groupId: z
+      .string()
+      .min(1, "Group ID is required")
+      .optional()
+      .nullable(),
 
     // 🔐 Equity constraints: non-negative, integer, max 20M, optional
     equityInvestment: z.coerce
@@ -102,6 +107,11 @@ export const updatePredictionSchema = z
       .int()
       .min(0, "Estimated time must be at least 0")
       .optional(),
+    groupId: z
+      .string()
+      .min(1, "Group ID is required")
+      .optional()
+      .nullable(),
 
     // 🔐 Same equity rules for updates
     equityInvestment: z.coerce

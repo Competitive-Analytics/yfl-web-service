@@ -1,6 +1,9 @@
 "use client";
 
-import PredictionForm from "@/components/forecasts/PredictionForm";
+import PredictionForm, {
+  GroupSubmissionContext,
+  PredictionSubmissionOptions,
+} from "@/components/forecasts/PredictionForm";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ForecastType } from "@/generated/prisma";
+import { ForecastType, PredictionType } from "@/generated/prisma";
 import { Edit, Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -19,6 +22,7 @@ type PredictionDialogProps = {
   forecastId: string;
   forecastTitle: string;
   forecastType: ForecastType;
+  forecastPredictionType?: PredictionType;
   categoricalOptions?: string[];
   existingPrediction?: {
     id: string;
@@ -29,15 +33,26 @@ type PredictionDialogProps = {
     estimatedTime: number | null;
     equityInvestment: number | null;
     debtFinancing: number | null;
+    isGroupPrediction?: boolean;
+    submittedBy?: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
   } | null;
+  groupContext?: GroupSubmissionContext | null;
+  submissionOptions?: PredictionSubmissionOptions;
 };
 
 export default function PredictionDialog({
   forecastId,
   forecastTitle,
   forecastType,
+  forecastPredictionType,
   categoricalOptions = [],
   existingPrediction,
+  groupContext,
+  submissionOptions,
 }: PredictionDialogProps) {
   const [open, setOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -64,7 +79,7 @@ export default function PredictionDialog({
           ) : (
             <>
               <Plus className="mr-2 h-4 w-4" />
-              Make Prediction   {/* ← CHANGED HERE */}
+              Make Prediction {/* ← CHANGED HERE */}
             </>
           )}
         </Button>
@@ -108,9 +123,12 @@ export default function PredictionDialog({
               <PredictionForm
                 forecastId={forecastId}
                 forecastType={forecastType}
+                forecastPredictionType={forecastPredictionType}
                 categoricalOptions={categoricalOptions}
                 existingPrediction={existingPrediction}
                 onSuccess={handleSuccess}
+                groupContext={groupContext}
+                submissionOptions={submissionOptions}
               />
             </div>
           </>
