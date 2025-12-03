@@ -38,20 +38,12 @@ type ForecastWithOrg = Forecast & {
   } | null;
 };
 
-type Category = {
-  id: string;
-  name: string;
-  color: string | null;
-};
-
 type EditForecastModalProps = {
   forecast: ForecastWithOrg;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Whether this is for org admin context */
   isOrgAdmin?: boolean;
-  /** Available categories for the organization */
-  categories?: Category[];
 };
 
 export default function EditForecastModal({
@@ -59,7 +51,6 @@ export default function EditForecastModal({
   open,
   onOpenChange,
   isOrgAdmin = false,
-  categories = [],
 }: EditForecastModalProps) {
   // Use different action based on context
   const [state, formAction, isPending] = useActionState(
@@ -73,7 +64,7 @@ export default function EditForecastModal({
     state?.data?.type ? (state.data.type as ForecastType) : forecast.type
   );
 
-  const [selectedDataType, setSelectedDataType] = useState<DataType | "">(
+  const [_selectedDataType, setSelectedDataType] = useState<DataType | "">(
     (state?.data?.dataType as DataType) || forecast.dataType || ""
   );
 
