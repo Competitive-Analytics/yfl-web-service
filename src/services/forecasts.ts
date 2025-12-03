@@ -78,6 +78,7 @@ export async function getForecasts({
         description: true,
         type: true,
         dataType: true,
+        predictionType: true,
         dueDate: true,
         dataReleaseDate: true,
         actualValue: true,
@@ -116,6 +117,7 @@ export async function createForecast(data: CreateForecastInput) {
       description: data.description,
       type: data.type,
       dataType: data.dataType,
+      predictionType: data.predictionType,
       dueDate: new Date(data.dueDate),
       dataReleaseDate: data.dataReleaseDate
         ? new Date(data.dataReleaseDate)
@@ -160,6 +162,7 @@ export async function updateForecast(data: UpdateForecastInput) {
       description: data.description,
       type: data.type,
       dataType: data.dataType,
+      predictionType: data.predictionType,
       dueDate: new Date(data.dueDate),
       dataReleaseDate: data.dataReleaseDate
         ? new Date(data.dataReleaseDate)
