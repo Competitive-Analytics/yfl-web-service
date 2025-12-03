@@ -19,6 +19,9 @@ export default async function SettingsOverviewPage() {
     <SettingsOverviewView
       organizationName={organization.name}
       organizationDescription={organization.description}
+      aiTokensUsed={organization.aiTokensUsedThisMonth}
+      aiTokenLimit={organization.aiTokenLimit}
+      hasApiKey={!!organization.openaiApiKey}
     />
   );
 }

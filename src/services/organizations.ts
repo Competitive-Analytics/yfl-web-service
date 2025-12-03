@@ -1,4 +1,5 @@
 import { Prisma, Role } from "@/generated/prisma";
+import { decryptApiKey, encryptApiKey } from "@/lib/encryption";
 import {
   calculatePagination,
   getPaginationValues,
@@ -525,3 +526,169 @@ export type OrganizationUser = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI Configuration Functions
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Update organization's OpenAI API key
+ *
+ * @param organizationId - Organization ID
+ * @param apiKey - OpenAI API key (will be encrypted before storage)
+ * @returns Updated organization
+ *
+ * @throws {Error} If organization not found or encryption fails
+ *
+ * @example
+ * ```typescript
+ * await updateOrganizationApiKey("org_123", "sk-1234567890abcdef");
+ * ```
+ */
+export async function updateOrganizationApiKey(
+  organizationId: string,
+  apiKey: string
+) {
+  const encrypted = encryptApiKey(apiKey);
+
+  return await prisma.organization.update({
+    where: { id: organizationId },
+    data: { openaiApiKey: encrypted },
+  });
+}
+
+/**
+ * Get decrypted OpenAI API key for organization
+ *
+ * @param organizationId - Organization ID
+ * @returns Decrypted API key or null if not set
+ *
+ * @throws {Error} If decryption fails
+ *
+ * @example
+ * ```typescript
+ * const apiKey = await getDecryptedApiKey("org_123");
+ * if (!apiKey) {
+ *   throw new Error("OpenAI API key not configured");
+ * }
+ * ```
+ */
+export async function getDecryptedApiKey(
+  organizationId: string
+): Promise<string | null> {
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { openaiApiKey: true },
+  });
+
+  if (!org || !org.openaiApiKey) {
+    return null;
+  }
+
+  return decryptApiKey(org.openaiApiKey);
+}
+
+/**
+ * Check if organization has exceeded its AI token limit
+ *
+ * @param organizationId - Organization ID
+ * @throws {Error} If token limit exceeded
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await checkTokenLimit("org_123");
+ *   // Proceed with AI request
+ * } catch (error) {
+ *   // Show error to user
+ * }
+ * ```
+ */
+export async function checkTokenLimit(organizationId: string): Promise<void> {
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: {
+      aiTokensUsedThisMonth: true,
+      aiTokenLimit: true,
+    },
+  });
+
+  if (!org) {
+    throw new Error("Organization not found");
+  }
+
+  if (org.aiTokensUsedThisMonth >= org.aiTokenLimit) {
+    throw new Error(
+      "Monthly AI token limit exceeded. Contact admin to increase limit."
+    );
+  }
+}
+
+/**
+ * Increment organization's AI token usage
+ *
+ * @param organizationId - Organization ID
+ * @param tokens - Number of tokens to add
+ *
+ * @example
+ * ```typescript
+ * await incrementAiTokenUsage("org_123", 1500);
+ * ```
+ */
+export async function incrementAiTokenUsage(
+  organizationId: string,
+  tokens: number
+): Promise<void> {
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: {
+      aiTokensUsedThisMonth: {
+        increment: tokens,
+      },
+    },
+  });
+}
+
+/**
+ * Reset organization's monthly AI token usage
+ *
+ * @param organizationId - Organization ID
+ *
+ * @example
+ * ```typescript
+ * // Call monthly via cron job
+ * await resetMonthlyTokens("org_123");
+ * ```
+ */
+export async function resetMonthlyTokens(
+  organizationId: string
+): Promise<void> {
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: {
+      aiTokensUsedThisMonth: 0,
+      aiTokensResetAt: new Date(),
+    },
+  });
+}
+
+/**
+ * Update organization's AI token limit
+ *
+ * @param organizationId - Organization ID
+ * @param limit - New token limit
+ *
+ * @example
+ * ```typescript
+ * await updateAiTokenLimit("org_123", 200000);
+ * ```
+ */
+export async function updateAiTokenLimit(
+  organizationId: string,
+  limit: number
+): Promise<void> {
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: { aiTokenLimit: limit },
+  });
+}

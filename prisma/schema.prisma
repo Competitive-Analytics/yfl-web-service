@@ -47,6 +47,12 @@ enum LeaderboardViewType {
   CATEGORY // Aggregated by category (for org admins)
 }
 
+enum AIConversationStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
 model Organization {
   id          String             @id @default(cuid())
   name        String             @unique
@@ -58,6 +64,14 @@ model Organization {
   updatedAt   DateTime           @updatedAt
 
   ledgerEntries LedgerEntry[]
+
+  // AI Configuration
+  openaiApiKey          String? // Encrypted with AES-256-GCM
+  aiTokensUsedThisMonth Int       @default(0)
+  aiTokenLimit          Int       @default(100000)
+  aiTokensResetAt       DateTime?
+
+  aiConversations AIConversation[]
 }
 
 model User {
@@ -80,6 +94,9 @@ model User {
 
   // Saved leaderboard views
   leaderboardViews LeaderboardView[]
+
+  // AI Conversations
+  aiConversations AIConversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -177,6 +194,9 @@ model Forecast {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
+  // AI Conversations that created this forecast
+  aiConversations AIConversation[]
+
   // @@unique([organizationId, title])
   @@index([organizationId])
   @@index([categoryId])
@@ -260,6 +280,26 @@ model LeaderboardView {
   @@unique([userId, name, viewType])
   @@index([userId])
   @@index([userId, viewType])
+}
+
+model AIConversation {
+  id             String               @id @default(cuid())
+  organizationId String
+  userId         String
+  title          String // Auto-generated from first message (60 char max)
+  messages       Json // Array of conversation messages
+  status         AIConversationStatus @default(IN_PROGRESS)
+  forecastId     String? // Links to created forecast when completed
+  tokenCount     Int                  @default(0)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  forecast     Forecast?    @relation(fields: [forecastId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, userId, createdAt])
+  @@index([userId, status])
 }
 
 // Optional for WebAuthn support

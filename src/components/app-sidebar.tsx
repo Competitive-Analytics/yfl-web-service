@@ -60,6 +60,16 @@ const orgAdminNavItems: NavItem[] = [
     title: "Forecasts",
     url: Router.FORECASTS,
     icon: IconEaseOutControlPoint,
+    items: [
+      {
+        title: "All Forecasts",
+        url: Router.FORECASTS,
+      },
+      {
+        title: "AI Assistant",
+        url: Router.ORG_ADMIN_AI_CONVERSATIONS,
+      },
+    ],
   },
   {
     title: "Settings",

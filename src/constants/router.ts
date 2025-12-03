@@ -27,6 +27,11 @@ class Router {
   static orgAdminForecastDetail = (id: string) =>
     `${Router.ORG_ADMIN_FORECASTS}/${id}`;
 
+  // Org Admin AI Forecasts
+  static ORG_ADMIN_AI_CONVERSATIONS = "/forecasts/ai";
+  static ORG_ADMIN_AI_CREATE_FORECAST = "/forecasts/ai/create";
+  static ORG_ADMIN_AI_CONVERSATION = (id: string) => `/forecasts/ai/${id}`;
+
   // Org Admin Leaderboard
   static LEADERBOARD = "/leaderboard";
   static LEADERBOARD_USERS = "/leaderboard/users";

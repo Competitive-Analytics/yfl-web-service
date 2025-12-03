@@ -39,6 +39,7 @@ import {
   ChevronUp,
   Plus,
   Search,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -200,10 +201,21 @@ export default function ForecastListView({
 
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Forecasts</h1>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Forecast
-        </Button>
+        <div className="flex gap-2">
+          {isOrgAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => router.push(Router.ORG_ADMIN_AI_CREATE_FORECAST)}
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Create with AI
+            </Button>
+          )}
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Forecast
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
