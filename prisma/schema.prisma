@@ -34,6 +34,11 @@ enum DataType {
   INTEGER
 }
 
+enum PredictionType {
+  INDIVIDUAL
+  GROUP
+}
+
 enum LedgerKind {
   REVENUE // cash in
   EXPENSE // cash out
@@ -200,6 +205,7 @@ model Forecast {
   description     String?
   type            ForecastType
   dataType        DataType? // Only for CONTINUOUS forecasts
+  predictionType  PredictionType    @default(INDIVIDUAL) // INDIVIDUAL or GROUP
   dueDate         DateTime // When predictions are due (includes time)
   dataReleaseDate DateTime? // When the actual data will be released (includes time)
   actualValue     String? // Actual outcome - for BINARY: "true"/"false", for CONTINUOUS: numeric string

@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ForecastType } from "@/generated/prisma";
+import { ForecastType, PredictionType } from "@/generated/prisma";
 import { Edit, Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -22,6 +22,7 @@ type PredictionDialogProps = {
   forecastId: string;
   forecastTitle: string;
   forecastType: ForecastType;
+  forecastPredictionType?: PredictionType;
   categoricalOptions?: string[];
   existingPrediction?: {
     id: string;
@@ -47,6 +48,7 @@ export default function PredictionDialog({
   forecastId,
   forecastTitle,
   forecastType,
+  forecastPredictionType,
   categoricalOptions = [],
   existingPrediction,
   groupContext,
@@ -77,7 +79,7 @@ export default function PredictionDialog({
           ) : (
             <>
               <Plus className="mr-2 h-4 w-4" />
-              Make Prediction   {/* ← CHANGED HERE */}
+              Make Prediction {/* ← CHANGED HERE */}
             </>
           )}
         </Button>
@@ -121,6 +123,7 @@ export default function PredictionDialog({
               <PredictionForm
                 forecastId={forecastId}
                 forecastType={forecastType}
+                forecastPredictionType={forecastPredictionType}
                 categoricalOptions={categoricalOptions}
                 existingPrediction={existingPrediction}
                 onSuccess={handleSuccess}

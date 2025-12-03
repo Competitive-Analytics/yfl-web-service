@@ -7,10 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -19,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ForecastType } from "@/generated/prisma";
+import { ForecastType, PredictionType } from "@/generated/prisma";
 import { useActionState, useEffect, useMemo, useState } from "react";
 
 export type GroupSubmissionContext = {
@@ -44,6 +41,7 @@ type SubmissionScope = "INDIVIDUAL" | "GROUP";
 type PredictionFormProps = {
   forecastId: string;
   forecastType: ForecastType;
+  forecastPredictionType?: PredictionType;
   categoricalOptions?: string[];
   existingPrediction?: {
     id: string;
@@ -96,6 +94,7 @@ export const METHOD_OPTIONS = [
 export default function PredictionForm({
   forecastId,
   forecastType,
+  forecastPredictionType = PredictionType.INDIVIDUAL,
   categoricalOptions = [],
   existingPrediction,
   isReadOnly = false,
@@ -123,15 +122,26 @@ export default function PredictionForm({
     }
   }, [state?.success, onSuccess]);
 
-  const submissionDefaults: PredictionSubmissionOptions = useMemo(
-    () =>
+  const submissionDefaults: PredictionSubmissionOptions = useMemo(() => {
+    // If forecast requires GROUP submission, lock it to GROUP
+    if (forecastPredictionType === PredictionType.GROUP && groupContext) {
+      return {
+        canSubmitIndividual: false,
+        canSubmitGroup: true,
+        defaultType: "GROUP",
+        lockedType: "GROUP",
+      };
+    }
+
+    // Otherwise use provided options or defaults
+    return (
       submissionOptions ?? {
         canSubmitIndividual: true,
         canSubmitGroup: Boolean(groupContext),
         defaultType: groupContext ? "GROUP" : "INDIVIDUAL",
-      },
-    [submissionOptions, groupContext]
-  );
+      }
+    );
+  }, [submissionOptions, groupContext, forecastPredictionType]);
 
   const initialScope: SubmissionScope =
     submissionDefaults.lockedType ?? submissionDefaults.defaultType;
@@ -142,8 +152,7 @@ export default function PredictionForm({
     setScope(initialScope);
   }, [initialScope]);
 
-  const effectiveScope =
-    submissionDefaults.lockedType ?? scope ?? "INDIVIDUAL";
+  const effectiveScope = submissionDefaults.lockedType ?? scope ?? "INDIVIDUAL";
   const isGroupScope = effectiveScope === "GROUP";
   const canSelectIndividual =
     submissionDefaults.canSubmitIndividual ||
@@ -154,7 +163,8 @@ export default function PredictionForm({
   const showScopeSelector =
     groupContext &&
     !submissionDefaults.lockedType &&
-    (submissionDefaults.canSubmitGroup || submissionDefaults.canSubmitIndividual);
+    (submissionDefaults.canSubmitGroup ||
+      submissionDefaults.canSubmitIndividual);
 
   // Show success message if submission was successful
   if (state?.success) {
@@ -188,7 +198,27 @@ export default function PredictionForm({
         </div>
       )}
 
-      {groupContext && (
+      {/* Group Forecast Notification */}
+      {forecastPredictionType === PredictionType.GROUP && groupContext && (
+        <div className="rounded-lg border border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-xs text-white">
+              i
+            </span>
+            Group Forecast
+          </h3>
+          <p className="text-sm text-blue-700 dark:text-blue-300 mt-2">
+            This forecast requires group submission. Your prediction will be
+            submitted for all members of{" "}
+            <span className="font-semibold">{groupContext.name}</span>:{" "}
+            {groupContext.members
+              .map((member) => member.name || member.email)
+              .join(", ")}
+          </p>
+        </div>
+      )}
+
+      {groupContext && forecastPredictionType !== PredictionType.GROUP && (
         <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
           <div className="flex flex-col gap-1">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -207,7 +237,9 @@ export default function PredictionForm({
               onValueChange={(value) => setScope(value as SubmissionScope)}
             >
               <label
-                className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 ${!canSelectIndividual ? "opacity-60" : "hover:bg-muted"}`}
+                className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 ${
+                  !canSelectIndividual ? "opacity-60" : "hover:bg-muted"
+                }`}
               >
                 <RadioGroupItem
                   value="INDIVIDUAL"
@@ -222,7 +254,9 @@ export default function PredictionForm({
                 </div>
               </label>
               <label
-                className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 ${!canSelectGroup ? "opacity-60" : "hover:bg-muted"}`}
+                className={`flex cursor-pointer items-start gap-2 rounded-md border p-3 ${
+                  !canSelectGroup ? "opacity-60" : "hover:bg-muted"
+                }`}
               >
                 <RadioGroupItem
                   value="GROUP"
@@ -241,9 +275,8 @@ export default function PredictionForm({
             <div className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
               {submissionDefaults.lockedType === "GROUP" ? (
                 <span>
-                  This forecast is locked to a{" "}
-                  <strong>group prediction</strong>. Updates will apply to{" "}
-                  {groupContext.name}.
+                  This forecast is locked to a <strong>group prediction</strong>
+                  . Updates will apply to {groupContext.name}.
                 </span>
               ) : (
                 <span>

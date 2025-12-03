@@ -18,6 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { DataType, ForecastType } from "@/generated/prisma";
+import { DataType, ForecastType, PredictionType } from "@/generated/prisma";
 import {
   AlertCircle,
   Calendar,
@@ -82,6 +83,12 @@ export default function CreateForecastModal({
   const [selectedDataType, setSelectedDataType] = useState<DataType | "">(
     (state?.data?.dataType as DataType) || ""
   );
+
+  const [selectedPredictionType, setSelectedPredictionType] =
+    useState<PredictionType>(
+      (state?.data?.predictionType as PredictionType) ||
+        PredictionType.INDIVIDUAL
+    );
 
   const [dueDate, setDueDate] = useState<Date | undefined>(
     state?.data?.dueDate ? new Date(state.data.dueDate) : undefined
@@ -361,6 +368,54 @@ export default function CreateForecastModal({
                 </p>
               </div>
             )}
+
+            {/* Prediction Type */}
+            <div className="space-y-3">
+              <Label>
+                Prediction Submission Type{" "}
+                <span className="text-destructive">*</span>
+              </Label>
+              <RadioGroup
+                name="predictionType"
+                value={selectedPredictionType}
+                onValueChange={(value) =>
+                  setSelectedPredictionType(value as PredictionType)
+                }
+                disabled={isPending}
+              >
+                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <RadioGroupItem
+                    value={PredictionType.INDIVIDUAL}
+                    id="individual"
+                  />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="individual" className="cursor-pointer">
+                      Individual
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Each user submits their own prediction independently
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <RadioGroupItem value={PredictionType.GROUP} id="group" />
+                  <div className="space-y-1 leading-none">
+                    <Label htmlFor="group" className="cursor-pointer">
+                      Group
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      A single prediction is submitted for all group members
+                    </p>
+                  </div>
+                </div>
+              </RadioGroup>
+              {state?.errors?.predictionType && (
+                <p className="text-sm text-destructive flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {state.errors.predictionType.join(", ")}
+                </p>
+              )}
+            </div>
 
             {/* Category */}
             <div className="space-y-2">

@@ -7,6 +7,7 @@ import {
   IconInnerShadowTop,
   IconListDetails,
   IconSettings,
+  IconUsers,
   type Icon,
   type IconProps,
 } from "@tabler/icons-react";

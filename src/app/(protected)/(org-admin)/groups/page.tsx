@@ -38,7 +38,7 @@ export default async function OrgAdminGroupsPage() {
           predictionCount: group._count.predictions,
           updatedAt: group.updatedAt,
           manageHref: Router.ORG_ADMIN_GROUP_DETAIL(group.id),
-          editHref: Router.ORG_ADMIN_GROUP_DETAIL(group.id),
+          editHref: Router.ORG_ADMIN_GROUP_EDIT(group.id),
         }))}
       />
     </div>

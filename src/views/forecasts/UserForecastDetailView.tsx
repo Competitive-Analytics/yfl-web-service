@@ -136,8 +136,9 @@ export default function UserForecastDetailView({
             forecastId={forecast.id}
             forecastTitle={forecast.title}
             forecastType={forecast.type}
+            forecastPredictionType={forecast.predictionType}
             categoricalOptions={options}
-            existingPrediction={existingPrediction}
+            // existingPrediction={existingPrediction}
           />
         )}
       </div>
@@ -218,6 +219,7 @@ export default function UserForecastDetailView({
                 forecastId={forecast.id}
                 forecastTitle={forecast.title}
                 forecastType={forecast.type}
+                forecastPredictionType={forecast.predictionType}
                 categoricalOptions={options}
                 existingPrediction={prediction ?? undefined}
                 groupContext={groupContext ?? undefined}

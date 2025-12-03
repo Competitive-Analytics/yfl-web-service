@@ -29,6 +29,8 @@ class Router {
   static ORG_ADMIN_GROUPS = "/groups";
   static ORG_ADMIN_GROUP_DETAIL = (groupId: string) =>
     `${Router.ORG_ADMIN_GROUPS}/${groupId}`;
+  static ORG_ADMIN_GROUP_EDIT = (groupId: string) =>
+    `${Router.ORG_ADMIN_GROUPS}/${groupId}/edit`;
 
   // Org Admin Leaderboard
   static LEADERBOARD = "/leaderboard";

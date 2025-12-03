@@ -181,3 +181,65 @@ export async function removeGroupMemberAction(
 
   return { success: true };
 }
+
+type GroupFormData = {
+  id?: string;
+  name: string;
+  description?: string | null;
+  organizationId: string;
+};
+
+export async function updateGroupFormAction(
+  groupId: string,
+  prevState: ActionState<GroupFormData> | undefined,
+  formData: FormData
+): Promise<ActionState<GroupFormData>> {
+  const session = await requireOrgAdmin();
+  const orgId = session.user.organizationId!;
+
+  const group = await getGroupById(groupId);
+  if (!group || group.organization?.id !== orgId) {
+    return createErrorState(
+      { _form: ["You are not authorized to update this group."] },
+      {
+        id: groupId,
+        name: formDataToString(formData.get("name")),
+        description: formDataToString(formData.get("description")) || null,
+        organizationId: orgId,
+      }
+    );
+  }
+
+  const rawData = extractFormData(formData, ["name", "description"]);
+  const dataToValidate = {
+    id: groupId,
+    name: formDataToString(rawData.name) || undefined,
+    description: formDataToString(rawData.description) || undefined,
+  };
+
+  const validation = validateFormData(updateGroupSchema, dataToValidate);
+  if (!validation.success) {
+    return createErrorState(validation.errors, {
+      id: groupId,
+      name: formDataToString(rawData.name),
+      description: formDataToString(rawData.description) || null,
+      organizationId: orgId,
+    });
+  }
+
+  await updateGroup(groupId, validation.data);
+
+  revalidatePath(GROUPS_PATH);
+  revalidatePath(`${GROUPS_PATH}/${groupId}`);
+
+  return {
+    success: true,
+    errors: {},
+    data: {
+      id: groupId,
+      name: validation.data.name ?? group.name,
+      description: validation.data.description ?? group.description ?? null,
+      organizationId: orgId,
+    },
+  };
+}

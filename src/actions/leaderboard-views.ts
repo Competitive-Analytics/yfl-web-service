@@ -23,7 +23,7 @@ import { revalidatePath } from "next/cache";
  * Get all saved views for the current user, optionally filtered by viewType
  */
 export async function getViewsAction(
-  viewType?: "USER" | "PREDICTION" | "CATEGORY"
+  viewType?: "USER" | "PREDICTION" | "CATEGORY" | "GROUP"
 ) {
   const session = await auth();
   if (!session?.user?.id) {
